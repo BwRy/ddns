@@ -1,0 +1,7 @@
+[Unit]
+Description=Dynamically update DNS records.
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ddns.sh /etc/ddns/*
