@@ -3,7 +3,7 @@
 ip="$(curl -6 icanhazip.com)"
 echo "Your IPv6 address is $ip"
 
-for key
+for key in /etc/ddns/*
 do
     host="$(sed 's/key "\([a-z.]*\)".*/\1/' "$key" | head -1)"
     echo "Updating host $host"

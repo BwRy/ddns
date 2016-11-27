@@ -4,4 +4,4 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/ddns.sh /etc/ddns/*
+ExecStart=/usr/bin/ddns.sh
