@@ -1,0 +1,16 @@
+pkgbase = ddns
+	pkgdesc = Automatic provisioning of Dynamic DNS.
+	pkgver = 1.0.1
+	pkgrel = 1
+	arch = i686
+	arch = x86_64
+	license = GPL
+	depends = bind-tools
+	depends = bash
+	depends = curl
+	optdepends = bind: for tsig-keygen
+	source = https://github.com/kcolford/ddns/archive/v1.0.1.tar.gz
+	md5sums = dd7e4a31e0413d6dc2ab266a66fa8099
+
+pkgname = ddns
+
