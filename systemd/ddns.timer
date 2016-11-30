@@ -2,8 +2,7 @@
 Description=Timer for updating dynamic DNS records.
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
+OnCalendar=*-*-* *:00/5:00
 
 [Install]
 WantedBy=multi-user.target
