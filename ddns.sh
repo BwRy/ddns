@@ -16,6 +16,7 @@ do
 	fi
 
 	echo "add $host MX 10 $host"
+	echo "add $host TXT \"v=spf1 mx -all\""
 
 	if ssh-keygen -r "$host" > /dev/null
 	then
