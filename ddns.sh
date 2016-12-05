@@ -15,6 +15,8 @@ do
 	    echo "add $host $ttl AAAA $(curl -6 "$ipurl")"
 	fi
 
+	echo "add $host MX 10 $host"
+
 	if ssh-keygen -r "$host" > /dev/null
 	then
 	    echo "del $host SSHFP"
