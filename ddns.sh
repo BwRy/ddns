@@ -5,7 +5,7 @@ then
     set -- "run"
 fi
 
-cd /etc/ddns/
+cd /etc/ddns/ || exit 1
 state=command
 useipv4=false
 ipurl="icanhazip.com"
@@ -47,7 +47,7 @@ EOF
 			# are unnecessary to consider since those
 			# setups ususally involve already having this
 			# kind of host name resolution setup.
-			if [ "$(cat "$key" | wc -l)" = 1 ]
+			if [ "$(wc -l < "$key")" = 1 ]
 			then
 			    chmod 644 "$key"
 			    chmod 600 "$(basename "$key" .key).private"
@@ -67,7 +67,7 @@ EOF
 			    echo "delete $host A"
 			    if "$useipv4" && curl -4 "$ipurl" > /dev/null
 			    then
-				echo "add $host A $(curl -4 "$ipurl")"
+				echo "add $host $ttl A $(curl -4 "$ipurl")"
 			    fi
 
 			    # IPv6 entries are what we want to publish
@@ -80,10 +80,10 @@ EOF
 			    # email provisioning
 			    echo "delete $host MX"
 			    echo "delete $host TXT \"v=spf1 mx -all\""
-			    if systemctl is-active postfix.service
+			    if systemctl is-active postfix.service > /dev/null
 			    then
-				echo "add $host MX 10 $host"
-				echo "add $host TXT \"v=spf1 mx -all\""
+				echo "add $host $ttl MX 10 $host"
+				echo "add $host $ttl TXT \"v=spf1 mx -all\""
 			    fi
 
 			    # ssh keys
