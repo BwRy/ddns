@@ -9,18 +9,20 @@ do
     echo "Updating host $host"
     {
 	echo "ttl $ttl"
+	echo "delete $host"
 	if curl -6 "$ipurl" > /dev/null
 	then
-	    echo "del $host AAAA"
 	    echo "add $host $ttl AAAA $(curl -6 "$ipurl")"
 	fi
 
-	echo "add $host MX 10 $host"
-	echo "add $host TXT \"v=spf1 mx -all\""
-
+	if systemctl is-active postfix.service
+	then
+	    echo "add $host MX 10 $host"
+	    echo "add $host TXT \"v=spf1 mx -all\""
+	fi
+	
 	if ssh-keygen -r "$host" > /dev/null
 	then
-	    echo "del $host SSHFP"
 	    ssh-keygen -r "" | sed "s/.*/add $host $ttl &/"
 	fi
 
