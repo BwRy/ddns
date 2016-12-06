@@ -5,12 +5,8 @@ then
     set -- "run"
 fi
 
-cd /etc/ddns/ || exit 1
 state=command
-useipv4=false
-ipurl="icanhazip.com"
-ttl=300
-logupdates=false
+config_file=/etc/ddns.conf
 for cmd
 do
     case "$state" in
@@ -20,9 +16,10 @@ do
 		    cat <<EOF
 Usage: $0 [subcommand [arguments]]
 
-Updates DNS entries via nsupdate using configured credentials.
-Credentials are stored in $(pwd)
+Updates DNS entries via nsupdate using configured credentials.  Most
+options are configured in $config_file
 
+	help		show this help message
 	run		update entries in DNS servers (default)
 	addzone		include the specified zone to update this host
 
@@ -88,9 +85,9 @@ EOF
 
 			    # ssh keys
 			    echo "delete $host SSHFP"
-			    if ssh-keygen -r "$host" > /dev/null
+			    if ssh-keygen -r "" > /dev/null
 			    then
-				ssh-keygen -r "" | sed "s/.*/add $host $ttl &/"
+				ssh-keygen -r "$host" | sed "s/.*/add &/"
 			    fi
 
 			    # log the update
@@ -106,9 +103,9 @@ EOF
 	    esac
 	    ;;
 	addzone)
-	    # generage SIG(0) keys by default, this avoids juggling
+	    # generate SIG(0) keys by default, this avoids juggling
 	    # permissions for us
-	    dnssec-keygen -T KEY -n HOST "$(hostname --short).$cmd"
+	    dnssec-keygen -K "$keydirectory" -T KEY -n HOST "$(hostname --short).$cmd"
 	    ;;
     esac
 done
