@@ -1,12 +1,18 @@
 #!/bin/sh
 
+config_file=/etc/ddns.conf
+useipv4=false
+ipurl=icanhazip.com
+ttl=300
+logupdates=false
+keydirectory=/etc/ddns/
+
 if [ "$#" = 0 ]
 then
     set -- "run"
 fi
 
 state=command
-config_file=/etc/ddns.conf
 for cmd
 do
     case "$state" in
@@ -17,8 +23,9 @@ do
 Usage: $0 [subcommand [arguments]]
 
 Updates DNS entries via nsupdate using configured credentials.  Most
-options are configured in $config_file
+options are configured in the config file specified by -c
 
+	-c, --config	the config file to load
 	help		show this help message
 	run		update entries in DNS servers (default)
 	addzone		include the specified zone to update this host
@@ -28,9 +35,16 @@ EOF
 		    ;;
 		addzone)
 		    state=addzone
+		    # shellcheck source=ddns.conf
+		    . "$config_file"
+		    ;;
+		-c|--config)
+		    state=config
 		    ;;
 		run)
 		    state=run
+		    # shellcheck source=ddns.conf
+		    . "$config_file"
 		    for key in *.key
 		    do
 			# ignore non-files
@@ -106,6 +120,10 @@ EOF
 	    # generate SIG(0) keys by default, this avoids juggling
 	    # permissions for us
 	    dnssec-keygen -K "$keydirectory" -T KEY -n HOST "$(hostname --short).$cmd"
+	    ;;
+	config)
+	    config_file="$cmd"
+	    state=command
 	    ;;
     esac
 done
