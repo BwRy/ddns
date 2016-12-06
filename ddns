@@ -45,7 +45,7 @@ EOF
 		    state=run
 		    # shellcheck source=ddns.conf
 		    . "$config_file"
-		    for key in *.key
+		    for key in "$keydirectory/"K*.key
 		    do
 			# ignore non-files
 			if ! [ -f "$key" ]
@@ -53,20 +53,8 @@ EOF
 			    continue
 			fi
 
-			# there are two possible key types, symetric
-			# TSIG and asymetric SIG(0).  Kerberos tickets
-			# are unnecessary to consider since those
-			# setups ususally involve already having this
-			# kind of host name resolution setup.
-			if [ "$(wc -l < "$key")" = 1 ]
-			then
-			    chmod 644 "$key"
-			    chmod 600 "$(basename "$key" .key).private"
-			    host="$(cut -d ' ' -f 1 "$key")"
-			else
-			    chmod 600 "$key"
-			    host="$(sed 's/key "\([a-z.]*\)".*/\1/' "$key" | head -1)"
-			fi
+			# now we get the host from the KEY RR
+			host="$(cut -d ' ' -f 1 "$key")"
 			
 			# now we update the host
 			{
