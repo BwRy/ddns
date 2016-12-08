@@ -29,6 +29,7 @@ options are configured in the config file specified by -c
 	help		show this help message
 	run		update entries in DNS servers (default)
 	addzone		include the specified zone to update this host
+	addme		add our hostname to the list of keys
 
 EOF
 		    exit 0
@@ -37,6 +38,10 @@ EOF
 		    state=addzone
 		    # shellcheck source=ddns.conf
 		    . "$config_file"
+		    ;;
+		addme)
+		    state=addme
+		    "$0" --config "$config_file" addzone "$(hostname --domain)"
 		    ;;
 		-c|--config)
 		    state=config
