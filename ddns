@@ -76,9 +76,9 @@ EOF
 
 			    # IPv6 entries are what we want to publish
 			    echo "delete $host AAAA"
-			    if curl -6 "$ipurl" > /dev/null
+			    if curl -s6 "$ipurl" > /dev/null
 			    then
-				echo "add $host $ttl AAAA $(curl -6 "$ipurl")"
+				echo "add $host $ttl AAAA $(curl -s6 "$ipurl")"
 			    fi
 
 			    # email provisioning
