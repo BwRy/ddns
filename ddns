@@ -7,6 +7,68 @@ ttl=300
 logupdates=false
 keydirectory=/etc/ddns/
 
+run() {
+    for key in "$keydirectory/"K*.key
+    do
+	# ignore non-files
+	if ! [ -f "$key" ]
+	then
+	    continue
+	fi
+
+	# now we get the host from the KEY RR
+	host="$(cut -d ' ' -f 1 "$key")"
+	
+	# now we update the host
+	{
+	    added_address=false
+	    echo "ttl $ttl"
+	    
+	    # IPv4 is usually masked behind NAT or
+	    # something else, so we'll usually ignore
+	    # it
+	    echo "delete $host A"
+	    if "$useipv4" && curl -s4 "$ipurl" > /dev/null
+	    then
+		added_address=true
+		echo "add $host $ttl A $(curl -s4 "$ipurl")"
+	    fi
+	    
+	    # IPv6 entries are what we want to publish
+	    echo "delete $host AAAA"
+	    if curl -s6 "$ipurl" > /dev/null
+	    then
+		added_address=true
+		echo "add $host $ttl AAAA $(curl -s6 "$ipurl")"
+	    fi
+	    
+	    # email provisioning
+	    echo "delete $host MX"
+	    echo "delete $host TXT \"v=spf1 mx -all\""
+	    if "$added_address" && systemctl is-active postfix > /dev/null
+	    then
+		echo "add $host $ttl MX 10 $host"
+		echo "add $host $ttl TXT \"v=spf1 mx -all\""
+	    fi
+	    
+	    # ssh keys
+	    echo "delete $host SSHFP"
+	    if "$added_address" && ssh-keygen -r "" > /dev/null
+	    then
+		ssh-keygen -r "$host" | sed "s/.*/add &/"
+	    fi
+	    
+	    # log the update
+	    if "$logupdates"
+	    then
+		echo "show"
+	    fi
+	    
+	    echo "send"
+	} | nsupdate -k "$key"
+    done
+}
+
 if [ "$#" = 0 ]
 then
     set -- "run"
@@ -50,62 +112,7 @@ EOF
 		    state=run
 		    # shellcheck source=ddns.conf
 		    . "$config_file"
-		    for key in "$keydirectory/"K*.key
-		    do
-			# ignore non-files
-			if ! [ -f "$key" ]
-			then
-			    continue
-			fi
-
-			# now we get the host from the KEY RR
-			host="$(cut -d ' ' -f 1 "$key")"
-			
-			# now we update the host
-			{
-			    echo "ttl $ttl"
-
-			    # IPv4 is usually masked behind NAT or
-			    # something else, so we'll usually ignore
-			    # it
-			    echo "delete $host A"
-			    if "$useipv4" && curl -4 "$ipurl" > /dev/null
-			    then
-				echo "add $host $ttl A $(curl -4 "$ipurl")"
-			    fi
-
-			    # IPv6 entries are what we want to publish
-			    echo "delete $host AAAA"
-			    if curl -s6 "$ipurl" > /dev/null
-			    then
-				echo "add $host $ttl AAAA $(curl -s6 "$ipurl")"
-			    fi
-
-			    # email provisioning
-			    echo "delete $host MX"
-			    echo "delete $host TXT \"v=spf1 mx -all\""
-			    if systemctl is-active postfix.service > /dev/null
-			    then
-				echo "add $host $ttl MX 10 $host"
-				echo "add $host $ttl TXT \"v=spf1 mx -all\""
-			    fi
-
-			    # ssh keys
-			    echo "delete $host SSHFP"
-			    if ssh-keygen -r "" > /dev/null
-			    then
-				ssh-keygen -r "$host" | sed "s/.*/add &/"
-			    fi
-
-			    # log the update
-			    if "$logupdates"
-			    then
-				echo "show"
-			    fi
-			    
-			    echo "send"
-			} | nsupdate -k "$key"
-		    done
+		    run
 		    ;;
 	    esac
 	    ;;
