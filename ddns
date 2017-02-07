@@ -4,6 +4,7 @@ ipurl=icanhazip.com
 ttl=300
 logupdates=false
 
+mkdir -p /etc/ddns
 case "$1" in
     -h|--help|help|"")
 	cat <<EOF
