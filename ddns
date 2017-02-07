@@ -1,132 +1,74 @@
 #!/bin/sh
 
-config_file=/etc/ddns.conf
-useipv4=true
-useipv6=true
 ipurl=icanhazip.com
-ttl=300
-logupdates=false
-keydirectory=/etc/ddns/
 
-run() {
-    for key in "$keydirectory/"K*.key
-    do
-	# ignore non-files
-	if ! [ -f "$key" ]
-	then
-	    continue
-	fi
-
-	# now we get the host from the KEY RR
-	host="$(cut -d ' ' -f 1 "$key")"
-	
-	# now we update the host
-	{
-	    added_address=false
-	    echo "ttl $ttl"
-	    
-	    # Check for IPv4 addresses that we can bind to and don't
-	    # go through NAT
-	    echo "delete $host A"
-	    if "$useipv4" && curl -s4 "$ipurl" > /dev/null &&
-		    curl --interface "$(curl -s4 "$ipurl")" -s4 "$ipurl" > /dev/null
-	    then
-		added_address=true
-		echo "add $host $ttl A $(curl -s4 "$ipurl")"
-	    fi
-	    
-	    # Check for IPv6 addresses that we can bind to and don't
-	    # go through NAT
-	    echo "delete $host AAAA"
-	    if "$useipv6" && curl -s6 "$ipurl" > /dev/null &&
-		    curl --interface "$(curl -s6 "$ipurl")" -s6 "$ipurl" > /dev/null
-	    then
-		added_address=true
-		echo "add $host $ttl AAAA $(curl -s6 "$ipurl")"
-	    fi
-	    
-	    # email provisioning
-	    echo "delete $host MX"
-	    echo "delete $host TXT \"v=spf1 mx -all\""
-	    if "$added_address" && systemctl is-active postfix > /dev/null
-	    then
-		echo "add $host $ttl MX 10 $host"
-		echo "add $host $ttl TXT \"v=spf1 mx -all\""
-	    fi
-	    
-	    # ssh keys
-	    echo "delete $host SSHFP"
-	    if "$added_address" && ssh-keygen -r "" > /dev/null
-	    then
-		ssh-keygen -r "$host" | sed "s/.*/add &/"
-	    fi
-	    
-	    # log the update
-	    if "$logupdates"
-	    then
-		echo "show"
-	    fi
-	    
-	    echo "send"
-	} | nsupdate -k "$key"
-    done
-}
-
-if [ "$#" = 0 ]
-then
-    set -- "run"
-fi
-
-state=command
-for cmd
-do
-    case "$state" in
-	command)
-	    case "$cmd" in
-		-h|--help|help)
-		    cat <<EOF
+case "$1" in
+    -h|--help|help|)
+    cat <<EOF
 Usage: $0 [subcommand [arguments]]
 
-Updates DNS entries via nsupdate using configured credentials.  Most
-options are configured in the config file specified by -c
+Updates DNS entries via nsupdate using configured credentials in
+/etc/ddns/ (the update directory).
 
-	-c, --config	the config file to load
 	help		show this help message
-	run		update entries in DNS servers (default)
-	addzone		include the specified zone to update this host
-	addme		add our hostname to the list of keys
-
+	run		update each host setup in /etc/ddns/
+	add HOSTNAME 	add HOSTNAME to /etc/ddns/
+	delete HOSTNAME	remove HOSTNAME from /etc/ddns/
 EOF
-		    exit 0
-		    ;;
-		addzone)
-		    state=addzone
-		    # shellcheck source=ddns.conf
-		    . "$config_file"
-		    ;;
-		addme)
-		    state=addme
-		    "$0" --config "$config_file" addzone "$(hostname --domain)"
-		    ;;
-		-c|--config)
-		    state=config
-		    ;;
-		run)
-		    state=run
-		    # shellcheck source=ddns.conf
-		    . "$config_file"
-		    run
-		    ;;
-	    esac
-	    ;;
-	addzone)
-	    # generate SIG(0) keys by default, this avoids juggling
-	    # permissions for us
-	    dnssec-keygen -K "$keydirectory" -T KEY -n HOST "$(hostname --short).$cmd"
-	    ;;
-	config)
-	    config_file="$cmd"
-	    state=command
-	    ;;
-    esac
-done
+    ;;
+    add)
+	dnssec-keygen -a RSASHA512 -K /etc/ddns -T KEY -n HOST "$2"
+	;;
+    delete)
+	rm /etc/ddns/k"$2".+*
+	;;
+    run)
+	for key in /etc/ddns/K*.key; do
+	    # now we get the host from the KEY RR
+	    host="$(cut -d ' ' -f 1 "$1")"
+
+	    # now we update the host
+	    {
+		added_address=false
+		echo "ttl 300"
+
+		# Check for IPv4 addresses that we can bind to and don't
+		# go through NAT
+		echo "delete $host A"
+		if curl --interface "$(curl -s4 "$ipurl")" -s4 "$ipurl" > /dev/null; then
+		    added_address=true
+		    echo "add $host $ttl A $(curl -s4 "$ipurl")"
+		fi
+
+		# Check for IPv6 addresses that we can bind to and don't
+		# go through NAT
+		echo "delete $host AAAA"
+		if curl --interface "$(curl -s6 "$ipurl")" -s6 "$ipurl" > /dev/null; then
+		    added_address=true
+		    echo "add $host $ttl AAAA $(curl -s6 "$ipurl")"
+		fi
+
+		# email provisioning
+		echo "delete $host MX"
+		echo "delete $host TXT \"v=spf1 mx -all\""
+		if "$added_address" && systemctl is-active postfix > /dev/null; then
+		    echo "add $host $ttl MX 10 $host"
+		    echo "add $host $ttl TXT \"v=spf1 mx -all\""
+		fi
+
+		# ssh keys
+		echo "delete $host SSHFP"
+		if "$added_address" && ssh-keygen -r "" > /dev/null; then
+		    ssh-keygen -r "$host" | sed "s/.*/add &/"
+		fi
+
+		# log the update
+		if "$logupdates"; then
+		    echo "show"
+		fi
+
+		echo "send"
+	    } | nsupdate -k "$1"
+	done
+	;;
+esac
