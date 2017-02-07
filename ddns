@@ -1,6 +1,8 @@
 #!/bin/sh
 
 ipurl=icanhazip.com
+ttl=300
+logupdates=false
 
 case "$1" in
     -h|--help|help|"")
@@ -30,7 +32,7 @@ EOF
 	    # now we update the host
 	    {
 		added_address=false
-		echo "ttl 300"
+		echo "ttl $ttl"
 
 		# Check for IPv4 addresses that we can bind to and don't
 		# go through NAT
@@ -68,7 +70,7 @@ EOF
 		fi
 
 		echo "send"
-	    } | nsupdate -k "$1"
+	    } | nsupdate -k "$key"
 	done
 	;;
 esac
