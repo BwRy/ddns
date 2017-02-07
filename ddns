@@ -25,7 +25,7 @@ EOF
     run)
 	for key in /etc/ddns/K*.key; do
 	    # now we get the host from the KEY RR
-	    host="$(cut -d ' ' -f 1 "$1")"
+	    host="$(cut -d ' ' -f 1 "$key")"
 
 	    # now we update the host
 	    {
