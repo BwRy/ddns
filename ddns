@@ -3,8 +3,8 @@
 ipurl=icanhazip.com
 
 case "$1" in
-    -h|--help|help|)
-    cat <<EOF
+    -h|--help|help|"")
+	cat <<EOF
 Usage: $0 [subcommand [arguments]]
 
 Updates DNS entries via nsupdate using configured credentials in
@@ -15,7 +15,7 @@ Updates DNS entries via nsupdate using configured credentials in
 	add HOSTNAME 	add HOSTNAME to /etc/ddns/
 	delete HOSTNAME	remove HOSTNAME from /etc/ddns/
 EOF
-    ;;
+	;;
     add)
 	dnssec-keygen -a RSASHA512 -K /etc/ddns -T KEY -n HOST "$2"
 	;;
