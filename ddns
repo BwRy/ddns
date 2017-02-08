@@ -23,7 +23,7 @@ EOF
 	dnssec-keygen -a RSASHA512 -K /etc/ddns -T KEY -n HOST "$2"
 	;;
     delete)
-	rm /etc/ddns/k"$2".+*
+	rm /etc/ddns/K"$2".+*
 	;;
     run)
 	for key in /etc/ddns/K*.key; do
