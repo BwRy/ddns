@@ -20,7 +20,7 @@ Updates DNS entries via nsupdate using configured credentials in
 EOF
 	;;
     add)
-	dnssec-keygen -a RSASHA512 -K /etc/ddns -T KEY -n HOST "$2"
+	dnssec-keygen -a RSASHA512 -b 2048 -K /etc/ddns -T KEY -n HOST "$2"
 	;;
     delete)
 	rm /etc/ddns/K"$2".+*
