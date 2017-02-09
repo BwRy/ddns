@@ -1,5 +1,6 @@
 [Unit]
 Description=Timer for updating dynamic DNS records.
+PartOf=ddns.service
 
 [Timer]
-OnCalendar=*-*-* *:00/5:00
+OnUnitActiveSec=5min
