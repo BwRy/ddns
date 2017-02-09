@@ -1,10 +1,5 @@
 [Unit]
 Description=Timer for updating dynamic DNS records.
-Wants=network-online.target
-After=network-online.target
 
 [Timer]
 OnCalendar=*-*-* *:00/5:00
-
-[Install]
-WantedBy=multi-user.target

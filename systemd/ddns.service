@@ -1,8 +1,9 @@
 [Unit]
 Description=Dynamically update DNS records.
-After=network-online.target
-Wants=network-online.target
+Wants=ddns.timer
 
 [Service]
-Type=oneshot
 ExecStart=/usr/bin/ddns run
+
+[Install]
+WantedBy=multi-user.target
