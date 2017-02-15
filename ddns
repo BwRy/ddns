@@ -55,7 +55,7 @@ EOF
 		echo "delete $host MX"
 		echo "delete $host TXT \"v=spf1 mx -all\""
 		if "$added_address" && systemctl is-active postfix > /dev/null; then
-		    echo "add $host $ttl MX 10 $host"
+		    echo "add $host $ttl MX 10 $(postconf -h myhostname)."
 		    echo "add $host $ttl TXT \"v=spf1 mx -all\""
 		fi
 
