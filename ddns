@@ -46,14 +46,12 @@ EOF
 
 	    # now we update the host
 	    {
-		added_address=false
 		echo "ttl $ttl"
 
 		# Check for IPv4 addresses that we can bind to and don't
 		# go through NAT
 		echo "delete $host A"
 		if s get_public_ip -4; then
-		    added_address=true
 		    echo "add $host $ttl A $(get_public_ip -4)"
 		fi
 
@@ -61,21 +59,23 @@ EOF
 		# go through NAT
 		echo "delete $host AAAA"
 		if s get_public_ip -6; then
-		    added_address=true
 		    echo "add $host $ttl AAAA $(get_public_ip -6)"
 		fi
+
+		echo "send"
 
 		# email provisioning
 		echo "delete $host MX"
 		echo "delete $host TXT \"v=spf1 mx -all\""
-		if "$added_address" && s systemctl is-active postfix; then
-		    echo "add $host $ttl MX 10 $(postconf -h myhostname)."
+		mxhost="$(postconf -h myhostname)"
+		if s getent ahosts "$mxhost" && s systemctl is-active postfix; then
+		    echo "add $host $ttl MX 10 $mxhost."
 		    echo "add $host $ttl TXT \"v=spf1 mx -all\""
 		fi
 
 		# ssh keys
 		echo "delete $host SSHFP"
-		if "$added_address" && s ssh-keygen -r ""; then
+		if s getent ahosts "$host" && s ssh-keygen -r ""; then
 		    ssh-keygen -r "$host" | sed "s/.*/add &/"
 		fi
 
