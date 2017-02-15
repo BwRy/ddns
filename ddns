@@ -1,8 +1,20 @@
 #!/bin/sh
 
 ipurl=icanhazip.com
-ttl=300
 logupdates=false
+ttl=300
+
+check_domain() {
+    echo "$1" | egrep -q '^([a-z0-9][a-z0-9-]*\.)*[a-z0-9][a-z0-9-]*$'
+}
+
+get_public_ip() {
+    curl -s --interface "$(curl -s "$@" "$ipurl")" "$@" "$ipurl"
+}
+
+s() {
+    "$@" > /dev/null
+}
 
 mkdir -p /etc/ddns
 case "$1" in
@@ -20,9 +32,11 @@ Updates DNS entries via nsupdate using configured credentials in
 EOF
 	;;
     add)
+	check_domain "$2" || exit
 	dnssec-keygen -a RSASHA512 -b 2048 -K /etc/ddns -T KEY -n HOST "$2"
 	;;
     delete)
+	check_domain "$2" || exit
 	rm /etc/ddns/K"$2".+*
 	;;
     run)
@@ -38,30 +52,30 @@ EOF
 		# Check for IPv4 addresses that we can bind to and don't
 		# go through NAT
 		echo "delete $host A"
-		if curl --interface "$(curl -s4 "$ipurl")" -s4 "$ipurl" > /dev/null; then
+		if s get_public_ip -4; then
 		    added_address=true
-		    echo "add $host $ttl A $(curl -s4 "$ipurl")"
+		    echo "add $host $ttl A $(get_public_ip -4)"
 		fi
 
 		# Check for IPv6 addresses that we can bind to and don't
 		# go through NAT
 		echo "delete $host AAAA"
-		if curl --interface "$(curl -s6 "$ipurl")" -s6 "$ipurl" > /dev/null; then
+		if s get_public_ip -6; then
 		    added_address=true
-		    echo "add $host $ttl AAAA $(curl -s6 "$ipurl")"
+		    echo "add $host $ttl AAAA $(get_public_ip -6)"
 		fi
 
 		# email provisioning
 		echo "delete $host MX"
 		echo "delete $host TXT \"v=spf1 mx -all\""
-		if "$added_address" && systemctl is-active postfix > /dev/null; then
+		if "$added_address" && s systemctl is-active postfix; then
 		    echo "add $host $ttl MX 10 $(postconf -h myhostname)."
 		    echo "add $host $ttl TXT \"v=spf1 mx -all\""
 		fi
 
 		# ssh keys
 		echo "delete $host SSHFP"
-		if "$added_address" && ssh-keygen -r "" > /dev/null; then
+		if "$added_address" && s ssh-keygen -r ""; then
 		    ssh-keygen -r "$host" | sed "s/.*/add &/"
 		fi
 
