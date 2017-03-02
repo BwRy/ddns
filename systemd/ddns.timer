@@ -1,6 +1,8 @@
 [Unit]
 Description=Timer for updating dynamic DNS records.
-PartOf=ddns.service
 
 [Timer]
-OnUnitActiveSec=5min
+OnCalendar=*:0/10
+
+[Install]
+WantedBy=timers.target
